@@ -1,0 +1,22 @@
+services:
+  product:
+    build:
+      context: ./services/product
+    container_name: product-service
+    ports:
+      - "5001:5000"
+    networks:
+      - backend
+
+  auth:
+    build:
+      context: ./services/auth
+    container_name: auth-service
+    ports:
+      - "5002:5000"
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge
