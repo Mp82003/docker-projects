@@ -10,6 +10,10 @@ services:
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: redis-cache
+    depends_on:
+      product-db:
+        condition: service_healthy
     networks:
       - backend
 
@@ -36,6 +40,40 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - backend
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis-cache
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    container_name: rabbitmq
+    ports:
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
+
+  notification:
+    build:
+      context: ./services/notification
+    container_name: notification-service
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
     networks:
       - backend
 

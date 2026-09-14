@@ -1,6 +1,8 @@
 from flask import Flask, jsonify
 import os
 import psycopg2
+import redis
+import json
 
 app = Flask(__name__)
 
@@ -14,8 +16,20 @@ def get_db_connection():
     )
 
 
+redis_client = redis.Redis(
+    host=os.getenv("REDIS_HOST", "redis-cache"),
+    port=6379,
+    decode_responses=True
+)
+
+
 @app.route("/products")
 def products():
+    cached_products = redis_client.get("products")
+
+    if cached_products:
+        return jsonify(json.loads(cached_products))
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -25,14 +39,22 @@ def products():
     cursor.close()
     conn.close()
 
-    return jsonify([
+    product_data = [
         {
             "id": product[0],
             "name": product[1],
             "price": product[2]
         }
         for product in products
-    ])
+    ]
+
+    redis_client.setex(
+        "products",
+        60,
+        json.dumps(product_data)
+    )
+
+    return jsonify(product_data)
 
 
 @app.route("/health")
