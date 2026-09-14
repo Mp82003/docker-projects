@@ -26,6 +26,25 @@ services:
     networks:
       - backend
 
+  order:
+    build:
+      context: ./services/order
+    container_name: order-service
+    ports:
+      - "5003:5000"
+    environment:
+      DB_HOST: ${ORDER_DB_HOST}
+      DB_NAME: ${ORDER_POSTGRES_DB}
+      DB_USER: ${ORDER_POSTGRES_USER}
+      DB_PASSWORD: ${ORDER_POSTGRES_PASSWORD}
+    depends_on:
+      order-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - backend
+
   product-db:
     image: postgres:17
     container_name: product-db
@@ -77,9 +96,31 @@ services:
     networks:
       - backend
 
+  order-db:
+    image: postgres:17
+    container_name: order-db
+    environment:
+      POSTGRES_DB: ${ORDER_POSTGRES_DB}
+      POSTGRES_USER: ${ORDER_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${ORDER_POSTGRES_PASSWORD}
+    volumes:
+      - order-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${ORDER_POSTGRES_USER} -d ${ORDER_POSTGRES_DB}"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
+
 networks:
   backend:
     driver: bridge
 
 volumes:
   product-db-data:
+  order-db-data:

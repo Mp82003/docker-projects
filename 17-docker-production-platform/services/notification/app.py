@@ -15,8 +15,6 @@ channel.queue_declare(
 def process_message(ch, method, properties, body):
     print("Received:", body, flush=True)
 
-    # Message successfully processed
-    ch.basic_ack(delivery_tag=method.delivery_tag)
 
 
 channel.basic_consume(
