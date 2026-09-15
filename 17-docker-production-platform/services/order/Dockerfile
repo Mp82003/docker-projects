@@ -2,6 +2,10 @@ FROM python:3.13-slim
 
 WORKDIR /app
 
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN useradd --create-home --shell /usr/sbin/nologin appuser
 
 COPY requirements.txt .
