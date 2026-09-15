@@ -27,25 +27,25 @@ jobs:
         run: |
           docker build \
             -t ecommerce-product:${{ github.sha }} \
-            ./services/product
+            ./17-docker-production-platform/services/product
 
       - name: Build Auth image
         run: |
           docker build \
             -t ecommerce-auth:${{ github.sha }} \
-            ./services/auth
+            ./17-docker-production-platform/services/auth
 
       - name: Build Order image
         run: |
           docker build \
             -t ecommerce-order:${{ github.sha }} \
-            ./services/order
+            ./17-docker-production-platform/services/order
 
       - name: Build Notification image
         run: |
           docker build \
             -t ecommerce-notification:${{ github.sha }} \
-            ./services/notification
+            ./17-docker-production-platform/services/notification
 
       - name: Scan Product image
         uses: aquasecurity/trivy-action@master
