@@ -90,46 +90,50 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set lowercase image owner
+        run: |
+          echo "IMAGE_OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
+
       - name: Tag Product image
         run: |
           docker tag \
             ecommerce-product:${{ github.sha }} \
-            ghcr.io/${{ github.repository_owner }}/ecommerce-product:${{ github.sha }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/ecommerce-product:${{ github.sha }}
 
       - name: Tag Auth image
         run: |
           docker tag \
             ecommerce-auth:${{ github.sha }} \
-            ghcr.io/${{ github.repository_owner }}/ecommerce-auth:${{ github.sha }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/ecommerce-auth:${{ github.sha }}
 
       - name: Tag Order image
         run: |
           docker tag \
             ecommerce-order:${{ github.sha }} \
-            ghcr.io/${{ github.repository_owner }}/ecommerce-order:${{ github.sha }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/ecommerce-order:${{ github.sha }}
 
       - name: Tag Notification image
         run: |
           docker tag \
             ecommerce-notification:${{ github.sha }} \
-            ghcr.io/${{ github.repository_owner }}/ecommerce-notification:${{ github.sha }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/ecommerce-notification:${{ github.sha }}
 
       - name: Push Product image
         run: |
           docker push \
-            ghcr.io/${{ github.repository_owner }}/ecommerce-product:${{ github.sha }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/ecommerce-product:${{ github.sha }}
 
       - name: Push Auth image
         run: |
           docker push \
-            ghcr.io/${{ github.repository_owner }}/ecommerce-auth:${{ github.sha }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/ecommerce-auth:${{ github.sha }}
 
       - name: Push Order image
         run: |
           docker push \
-            ghcr.io/${{ github.repository_owner }}/ecommerce-order:${{ github.sha }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/ecommerce-order:${{ github.sha }}
 
       - name: Push Notification image
         run: |
           docker push \
-            ghcr.io/${{ github.repository_owner }}/ecommerce-notification:${{ github.sha }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/ecommerce-notification:${{ github.sha }}
