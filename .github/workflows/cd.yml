@@ -11,7 +11,10 @@ jobs:
 
   deploy:
 
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: >-
+      ${{ github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.event == 'push' &&
+          github.event.workflow_run.head_branch == 'main' }}
 
     runs-on: self-hosted
 
@@ -56,6 +59,11 @@ jobs:
             -f 17-docker-production-platform/docker-compose.yml \
             ps
 
-      - name: Verify application health
+      - name: Verify NGINX container
         run: |
-          curl --fail http://localhost:8081/health
+          docker inspect --format='{{.State.Status}}' nginx-gateway | grep -q running
+
+      - name: Verify NGINX health
+        run: |
+          docker exec nginx-gateway \
+            wget -qO- http://localhost/health
