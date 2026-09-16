@@ -1,268 +1,641 @@
-Production-Grade E-Commerce Microservices Platform
+# 🚀 Production-Grade E-Commerce Microservices Platform
 
-A production-oriented containerized e-commerce microservices platform
-built to demonstrate practical Docker, networking, databases, Redis
-caching, RabbitMQ asynchronous communication, NGINX reverse proxy,
-health checks, container security, Docker Secrets, and CI/CD
-readiness.
+A production-oriented **containerized E-Commerce Microservices Platform** built using Docker, Flask, PostgreSQL, Redis, RabbitMQ, NGINX, Prometheus, cAdvisor, Grafana and GitHub Actions.
 
-This project focuses primarily on DevOps and container engineering,
-with lightweight Flask services used to demonstrate the infrastructure
-concepts.
+The project demonstrates how a microservices-based application can be containerized, secured, monitored, tested, continuously integrated and deployed using modern DevOps practices.
 
-Architecture
+---
 
+## 🏗️ Architecture
+
+```text
                          INTERNET
                             |
                          NGINX
-                      Reverse Proxy
+                      API GATEWAY
                             |
-                       +----+----+
-                       |         |
-                     AUTH     PRODUCT
-                       |         |
-                      DB        DB
-                                  |
-                               REDIS
-
-                       ORDER SERVICE
+          +-----------------+-----------------+
+          |                 |                 |
+        AUTH             PRODUCT            ORDER
+          |                 |                 |
+      PostgreSQL        PostgreSQL        PostgreSQL
                             |
-                     +------+------+
-                     |             |
-                   DB          RABBITMQ
-                                  |
-                           NOTIFICATION
-
-Observability / Security
-
-Docker Containers
-       |
-    Trivy
-       |
-Vulnerability Scan
-
-Docker Containers
-       |
- Healthchecks
-       |
- Container Security
-       |
- Non-root + Capabilities + Resource Limits + Secrets
-
-Services
-
-Service                 Technology              Purpose
-
-Auth                    Flask + Gunicorn        Authentication API
-
-Product                 Flask + PostgreSQL +    Product API with
-Redis                   caching
-
-Order                   Flask + PostgreSQL +    Order creation and
-RabbitMQ                event publishing
-
-Notification            Python + RabbitMQ       Consumes order events
-asynchronously
-
-NGINX                   NGINX Alpine            Reverse proxy / API
-gateway
-
-Product DB              PostgreSQL 17           Product persistence
-
-Order DB                PostgreSQL 17           Order persistence
-
-Redis                   Redis 7 Alpine          Product response
-caching
-
-RabbitMQ                RabbitMQ 4 Management   Asynchronous messaging
-
-Key DevOps Features
-
-1. Containerization
-
-Each application service has its own Docker image and runs
-independently.
-
-Dockerfiles for individual services
-
-Gunicorn for production-style Flask serving
-
-Minimal Python slim base images
-
-Container health checks
-
-Isolated service execution
-
-2. Docker Networking
-
-Services communicate using Docker's internal DNS and the backend
-bridge network.
-
-Example:
-
-order-service -> order-db
-order-service -> rabbitmq
-product-service -> product-db
-product-service -> redis-cache
-nginx -> auth-service
-nginx -> product-service
-nginx -> order-service
-
-3. PostgreSQL Persistence
-
-Named Docker volumes preserve database data even when containers are
-removed.
-
-product-db-data
-order-db-data
-
-4. Redis Caching
-
-The Product service uses Redis to cache product responses.
-
-Flow:
-
-Request
-   |
-Redis Cache?
-  / \
-YES  NO
- |    |
-Return PostgreSQL
-      |
-   Store in Redis
-      |
-    Return
-
-Cache entries use a TTL of 60 seconds.
-
-5. RabbitMQ Asynchronous Communication
-
-The Order service publishes order events to the durable order-events
-queue.
-
-Order Service
-     |
-     | publish
-     v
- RabbitMQ
-     |
-     | consume
-     v
-Notification Service
-
-Message acknowledgement and redelivery were tested by stopping the
-consumer before acknowledgement and verifying that the message was
-requeued and delivered after recovery.
-
-6. NGINX Reverse Proxy
-
-NGINX acts as the single API gateway for application routing.
-
-Client
-  |
-NGINX :8081
-  |
-  +-- /auth/     -> auth-service
-  +-- /products/ -> product-service
-  +-- /orders/   -> order-service
-
-NGINX also provides a gateway health endpoint.
-
-7. Container Health Checks
-
-Health checks are configured for critical services including:
-
-Product DB
-
-Order DB
-
-Redis
-
-RabbitMQ
-
-Product service
-
-Auth service
-
-Order service
-
-Docker Compose uses service health conditions for important
-dependencies.
-
-8. Container Security
-
-Application containers run as a non-root user:
-
-appuser
-
-Additional hardening includes:
-
-security_opt:
-  - no-new-privileges:true
-
-cap_drop:
-  - ALL
-
-Resource limits are also configured to reduce the impact of runaway
-containers.
-
-9. Docker Secrets
-
-The Order PostgreSQL password is supplied using a Docker Secret:
-
-/run/secrets/order_db_password
-
-Sensitive configuration is excluded from Git using:
-
-.env
-secrets/
-
-10. Trivy Security Scanning
-
-The Order image was scanned using Trivy.
-
-Initial scan:
-
-HIGH: 53
-CRITICAL: 3
-
-After updating the Debian packages in the image:
-
-HIGH: 44
-CRITICAL: 0
-
-The remaining reported vulnerabilities were primarily base-image
-packages for which Trivy reported no currently available fixed version.
-Fixable critical vulnerabilities were remediated rather than hidden with
-an ignore rule.
-
-API Endpoints
-
-Auth
+                          Redis
+                            |
+                         RabbitMQ
+                            |
+                      NOTIFICATION
+
+
+CI/CD Architecture
+        
+
+              GitHub
+                 |
+          GitHub Actions
+                 |
+        +--------+--------+
+        |                 |
+     Docker Build       Trivy
+        |                 |
+        +--------+--------+
+                 |
+              GHCR
+                 |
+        Self-Hosted Runner
+                 |
+        Docker Compose
+                 |
+          Production
+
+🎯 Project Objectives
+
+The main objectives of this project are:
+
+Build a microservices-based application
+Containerize every application service
+Isolate services using Docker networks
+Use PostgreSQL for persistent data storage
+Implement Redis caching
+Implement asynchronous communication using RabbitMQ
+Use NGINX as an API Gateway
+Implement container healthchecks
+Apply Docker security best practices
+Scan container images using Trivy
+Monitor containers using Prometheus and cAdvisor
+Visualize metrics using Grafana
+Implement CI using GitHub Actions
+Build and push versioned Docker images to GHCR
+Implement CD using a self-hosted GitHub Actions runner
+Test rollback using previous image versions
+Test RabbitMQ message redelivery and failure recovery
+🧩 Microservices
+1. Auth Service
+
+Technology:
+
+Python
+Flask
+Gunicorn
+Docker
+
+Responsibilities:
+
+User login
+Basic authentication endpoint
+Healthcheck endpoint
+
+Endpoints:
 
 POST /login
 GET  /health
+2. Product Service
 
-Example login:
+Technology:
 
-{
-  "username": "admin",
-  "password": "secret"
-}
+Python
+Flask
+PostgreSQL
+Redis
+Gunicorn
+Docker
 
-Product
+Responsibilities:
+
+Retrieve product information
+Store product data in PostgreSQL
+Cache product responses using Redis
+
+Endpoint:
 
 GET /products
-GET /health
 
-Order
+Healthcheck:
+
+GET /health
+Redis Caching Flow
+Client
+  |
+Product Service
+  |
+  +----> Redis
+  |        |
+  |     Cache Hit
+  |
+  +----> PostgreSQL
+           |
+        Cache Result
+           |
+          Redis
+
+Product data is cached using a TTL of 60 seconds.
+
+3. Order Service
+
+Technology:
+
+Python
+Flask
+PostgreSQL
+RabbitMQ
+Gunicorn
+Docker
+
+Responsibilities:
+
+Create orders
+Store orders in PostgreSQL
+Publish order events to RabbitMQ
+Retrieve existing orders
+
+Endpoints:
 
 POST /orders
 GET  /orders
 GET  /health
+Order Flow
+Client
+   |
+   v
+NGINX
+   |
+   v
+Order Service
+   |
+   +------> PostgreSQL
+   |
+   +------> RabbitMQ
+                |
+                v
+        Notification Service
+4. Notification Service
 
-Example order:
+Technology:
+
+Python
+RabbitMQ
+Docker
+
+Responsibilities:
+
+Consume order events from RabbitMQ
+Process order notifications asynchronously
+Acknowledge successfully processed messages
+
+RabbitMQ queue:
+
+order-events
+
+The queue is configured as durable and messages are published as persistent messages.
+
+🗄️ Database Architecture
+
+The application uses separate PostgreSQL databases for service isolation.
+
+Product Service
+      |
+      v
+  product-db
+      |
+  productdb
+
+
+Order Service
+      |
+      v
+   order-db
+      |
+   orderdb
+
+Persistent Docker volumes:
+
+product-db-data
+order-db-data
+
+This ensures database data survives container recreation.
+
+🔴 Redis
+
+Redis is used as a caching layer for the Product Service.
+
+Product Service
+      |
+      v
+    Redis
+      |
+  Cache Hit
+      |
+   Response
+
+If the product data is not present in Redis:
+
+Product Service
+      |
+      v
+ PostgreSQL
+      |
+      v
+ Redis Cache
+      |
+      v
+ Response
+
+Cache TTL:
+
+60 seconds
+🐇 RabbitMQ
+
+RabbitMQ is used for asynchronous communication between the Order and Notification services.
+
+Queue:
+
+order-events
+
+Message flow:
+
+Order Service
+      |
+      | publish event
+      v
+   RabbitMQ
+      |
+      | consume
+      v
+Notification Service
+
+The queue is durable and messages use persistent delivery mode.
+
+🌐 NGINX API Gateway
+
+NGINX is used as the entry point for application traffic.
+
+Host port:
+
+8081
+
+Routing:
+
+/auth/       → Auth Service
+/products/   → Product Service
+/orders/     → Order Service
+/health      → NGINX Healthcheck
+
+Example:
+
+Client
+  |
+  v
+localhost:8081
+  |
+  +---- /auth/      → auth-service
+  |
+  +---- /products/  → product-service
+  |
+  +---- /orders/    → order-service
+
+NGINX also forwards client information using:
+
+Host
+X-Real-IP
+🐳 Docker Networking
+
+The application services communicate through a dedicated Docker bridge network:
+
+backend
+
+Services communicate using Docker container/service names instead of hardcoded IP addresses.
+
+Examples:
+
+product-db:5432
+order-db:5432
+redis-cache:6379
+rabbitmq:5672
+
+This provides service discovery within the Docker network.
+
+❤️ Healthchecks
+
+Healthchecks are implemented for infrastructure services.
+
+Examples:
+
+PostgreSQL
+pg_isready
+Redis
+redis-cli ping
+RabbitMQ
+rabbitmq-diagnostics -q ping
+
+Application services expose:
+
+/health
+
+Docker Compose uses health-based dependencies where required.
+
+🔐 Security
+
+Several Docker security practices are implemented.
+
+Non-Root Containers
+
+Application containers run using a dedicated:
+
+appuser
+
+instead of the root user.
+
+no-new-privileges
+
+Application services use:
+
+security_opt:
+  - no-new-privileges:true
+
+This prevents processes inside the container from gaining additional privileges.
+
+Linux Capabilities
+
+Application containers drop unnecessary Linux capabilities:
+
+cap_drop:
+  - ALL
+
+NGINX uses only the capabilities required for its startup behavior:
+
+cap_drop:
+  - ALL
+
+cap_add:
+  - CHOWN
+  - SETGID
+  - SETUID
+Resource Limits
+
+Application containers have memory limits.
+
+Example:
+
+mem_limit: 512m
+
+NGINX:
+
+mem_limit: 256m
+
+This helps prevent an individual container from consuming unlimited host memory.
+
+🔑 Docker Secrets
+
+Database credentials for the Order Service are handled using Docker Secrets.
+
+Secret:
+
+order_db_password
+
+Mounted inside the container at:
+
+/run/secrets/order_db_password
+
+The Order Service reads the password from the Docker secret instead of hardcoding it in application code.
+
+Secret files are kept outside the Git repository.
+
+🛡️ Trivy Security Scanning
+
+Container images are scanned using Trivy during CI.
+
+Images scanned:
+
+ecommerce-product
+ecommerce-auth
+ecommerce-order
+ecommerce-notification
+
+The CI pipeline checks:
+
+HIGH
+CRITICAL
+
+severity vulnerabilities.
+
+Unfixed vulnerabilities are ignored using:
+
+ignore-unfixed: true
+
+This allows the pipeline to distinguish vulnerabilities that currently have no available fix.
+
+📊 Monitoring
+
+Monitoring stack:
+
+cAdvisor
+    |
+    v
+Prometheus
+    |
+    v
+Grafana
+cAdvisor
+
+cAdvisor collects container-level metrics such as:
+
+CPU usage
+Memory usage
+Container statistics
+
+cAdvisor endpoint:
+
+http://localhost:8082/metrics
+Prometheus
+
+Prometheus scrapes metrics from:
+
+prometheus:9090
+cadvisor:8080
+
+Prometheus UI:
+
+http://localhost:9090
+
+Targets are verified through the Prometheus Targets page.
+
+Expected state:
+
+cadvisor     UP
+prometheus   UP
+Grafana
+
+Grafana is used to visualize Prometheus metrics.
+
+Grafana:
+
+http://localhost:3000
+
+Prometheus datasource:
+
+http://prometheus:9090
+
+Example dashboard metric:
+
+container_memory_usage_bytes
+
+Dashboard:
+
+Container Memory Usage
+🔄 CI Pipeline
+
+GitHub Actions is used for Continuous Integration.
+
+Pipeline flow:
+
+Git Push
+   |
+   v
+GitHub Actions
+   |
+   v
+Checkout Code
+   |
+   v
+Docker Buildx
+   |
+   v
+Build Microservice Images
+   |
+   v
+Trivy Security Scan
+   |
+   v
+Login to GHCR
+   |
+   v
+Version Images using Git SHA
+   |
+   v
+Push Images to GHCR
+
+Images are tagged using the Git commit SHA.
+
+Example:
+
+ghcr.io/mp82003/ecommerce-product:<git-sha>
+
+This provides immutable version references for deployments and rollback.
+
+🚀 CD Pipeline
+
+Continuous Deployment is implemented using:
+
+GitHub Actions
++
+Self-Hosted Runner
++
+Docker Compose
+
+Deployment flow:
+
+Successful CI
+      |
+      v
+CD Workflow
+      |
+      v
+Checkout Exact Commit
+      |
+      v
+Login to GHCR
+      |
+      v
+Pull Versioned Images
+      |
+      v
+Docker Compose Deployment
+      |
+      v
+Health Verification
+
+The deployment verifies:
+
+Production environment
+Application containers
+NGINX container
+NGINX health endpoint
+🔙 Rollback Strategy
+
+Images are versioned using Git commit SHA.
+
+Example:
+
+Version A
+6b64d6c6416b77ed7327dd6472f615b631915b9b
+
+Previous version:
+
+c01eed395282e2603952925dfb1eb227ca814ed9
+
+Rollback is performed by selecting the previous image tag:
+
+export IMAGE_TAG=<previous-git-sha>
+
+Then:
+
+docker compose pull
+docker compose up -d
+
+The rollback was tested successfully and the previous application version was restored.
+
+🧪 Failure Testing
+
+The project includes failure testing to validate message reliability.
+
+RabbitMQ Message Redelivery Test
+
+The Notification Service ACK mechanism was temporarily disabled.
+
+Result:
+
+Message
+   |
+RabbitMQ
+   |
+Notification Service
+   |
+ACK disabled
+   |
+Message becomes UNACKED
+
+After the consumer stopped:
+
+UNACKED
+   |
+   v
+RabbitMQ
+   |
+Requeued
+   |
+   v
+Notification Service Restart
+   |
+Message Redelivered
+   |
+ACK
+
+Final queue state:
+
+Pending: 0
+Unacked: 0
+
+This demonstrated reliable message processing and redelivery behavior.
+
+🧪 End-to-End Testing
+
+Order creation was tested successfully.
+
+Example request:
+
+POST /orders
+
+Example payload:
 
 {
   "user_id": 1,
@@ -270,298 +643,113 @@ Example order:
   "quantity": 2
 }
 
-NGINX Routes
+The request flow:
 
-The public gateway runs on:
+Client
+  |
+  v
+NGINX
+  |
+  v
+Order Service
+  |
+  +------> PostgreSQL
+  |
+  +------> RabbitMQ
+               |
+               v
+       Notification Service
 
-http://localhost:8081
+The order was successfully stored in PostgreSQL and the corresponding event was received by the Notification Service.
 
-Routes:
-
-/auth/
-/products/
-/orders/
-/health
-
-Project Structure
-
+📁 Project Structure
 17-docker-production-platform/
-├── .github/
-│   └── workflows/
+│
 ├── monitoring/
+│   └── prometheus/
+│       └── prometheus.yml
+│
 ├── nginx/
 │   └── nginx.conf
+│
 ├── secrets/
-│   └── order_db_password.txt
+│
 ├── services/
+│   │
 │   ├── auth/
 │   │   ├── app.py
-│   │   ├── requirements.txt
-│   │   └── Dockerfile
+│   │   ├── Dockerfile
+│   │   └── requirements.txt
+│   │
 │   ├── notification/
 │   │   ├── app.py
-│   │   ├── requirements.txt
-│   │   └── Dockerfile
+│   │   ├── Dockerfile
+│   │   └── requirements.txt
+│   │
 │   ├── order/
 │   │   ├── app.py
-│   │   ├── requirements.txt
-│   │   └── Dockerfile
+│   │   ├── Dockerfile
+│   │   └── requirements.txt
+│   │
 │   └── product/
 │       ├── app.py
-│       ├── requirements.txt
-│       └── Dockerfile
-├── .env
-├── .gitignore
+│       ├── Dockerfile
+│       └── requirements.txt
+│
 ├── docker-compose.yml
 └── README.md
+🛠️ Technologies Used
+Category	Technology
+Containerization	Docker
+Orchestration	Docker Compose
+Backend	Python, Flask
+Web Server	Gunicorn
+API Gateway	NGINX
+Database	PostgreSQL
+Cache	Redis
+Message Broker	RabbitMQ
+Monitoring	Prometheus
+Container Metrics	cAdvisor
+Visualization	Grafana
+Security Scanning	Trivy
+CI/CD	GitHub Actions
+Container Registry	GitHub Container Registry
+Deployment	Self-Hosted GitHub Actions Runner
+Version Control	Git / GitHub
+▶️ Running the Project
 
-Running the Project
+Clone the repository:
 
-Clone the repository and enter the project directory:
+git clone <repository-url>
+
+Navigate to the project:
 
 cd 17-docker-production-platform
 
-Create the required environment configuration and secret according to
-the project configuration.
-
-Validate the Compose configuration:
-
-docker compose config
-
-Build the services:
-
-docker compose build
+Create/configure the required environment variables and Docker secrets.
 
 Start the platform:
 
 docker compose up -d
 
-Check running containers:
+Check containers:
 
 docker compose ps
 
-Check logs:
+View logs:
 
 docker compose logs -f
 
 Stop the platform:
 
 docker compose down
-
-Verification
-
-Useful verification commands:
-
-docker compose ps
-docker network ls
-docker volume ls
-docker images
-
-Check Order service:
-
-docker ps --filter name=order-service
-
-Check the security user:
-
-docker exec order-service whoami
-
-Expected:
-
-appuser
-
-Run a Trivy scan:
-
-trivy image --severity HIGH,CRITICAL 17-docker-production-platform-order:latest
-
-Failure Testing
-
-RabbitMQ reliability was tested by temporarily stopping acknowledgement
-in the Notification consumer.
-
-Observed flow:
-
-Order Event
-    |
-RabbitMQ
-    |
-Notification Consumer
-    |
-ACK disabled
-    |
-Message becomes UNACKED
-    |
-Consumer failure
-    |
-Message requeued
-    |
-Consumer restart
-    |
-Message redelivered
-    |
-ACK restored
-    |
-Queue cleared
-
-This demonstrates practical message durability and recovery behavior.
-
-Technologies Used
-
-Docker
-
-Docker Compose
-
-Python
-
-Flask
-
-Gunicorn
-
-PostgreSQL
-
-Redis
-
-RabbitMQ
-
-NGINX
-
-Docker Networks
-
-Docker Volumes
-
-Docker Secrets
-
-Trivy
-
-GitHub Actions (CI/CD)
-
-Screenshots
-
-Project implementation evidence is available in the screenshots/
-directory.
-
-Application & Authentication
-
-
-
-
-
-
-
-
-
-Product Service
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Order Service
-
-
-
-
-
-
-
-
-
-RabbitMQ & Notification
-
-
-
-
-
-
-
-
-
-
-
-
-
-NGINX
-
-
-
-
-
-Docker Persistence
-
-
-
-
-
-Service Communication
-
-
-
-Resume Description
-
-Production-Grade E-Commerce Microservices Platform | Docker, Docker
-Compose, PostgreSQL, Redis, RabbitMQ, NGINX, Trivy
-
-Built a production-oriented containerized e-commerce microservices
-platform with isolated Docker networking, PostgreSQL persistence, Redis
-caching, RabbitMQ asynchronous messaging, NGINX reverse proxy routing,
-service health checks, Docker Secrets, non-root containers, Linux
-capability restrictions, resource limits, and Trivy vulnerability
-scanning. Implemented and tested RabbitMQ message acknowledgement and
-redelivery during consumer failure.
-
-Interview Highlights
-
-Key DevOps topics demonstrated by this project:
-
-Why microservices are independently containerized
-
-Docker Compose service dependencies and health conditions
-
-Docker bridge networking and service discovery
-
-PostgreSQL persistence using named volumes
-
-Redis cache hit/miss and TTL behavior
-
-RabbitMQ durable queues and message acknowledgement
-
-Message redelivery after consumer failure
-
-NGINX reverse proxy and API routing
-
-Running containers as non-root
-
-Dropping Linux capabilities
-
-no-new-privileges
-
-Container resource limits
-
-Docker Secrets
-
-Trivy vulnerability scanning
-
-Vulnerability remediation and security verification
-
-Production-style Gunicorn serving
-
-CI/CD automation with GitHub Actions
-
-Author
-
-Built as a hands-on DevOps portfolio project demonstrating practical
-containerization, security, networking, persistence, caching, messaging,
-reverse proxying, and CI/CD concepts.
+🔍 Useful URLs
+Component	URL
+NGINX Gateway	http://localhost:8081
+Grafana	http://localhost:3000
+Prometheus	http://localhost:9090
+cAdvisor	http://localhost:8082/metrics
+RabbitMQ Management	http://localhost:15672
+Product Service	http://localhost:5001
+Auth Service	http://localhost:5002
+Order Service	http://localhost:5003
