@@ -40,15 +40,21 @@ jobs:
         run: |
           echo "IMAGE_TAG=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_ENV"
 
+      - name: Verify production environment
+        run: |
+          test -r /home/asus/docker-projects/docker-secrets/production.env
+
       - name: Pull application images
         run: |
           docker compose \
+            --env-file /home/asus/docker-projects/docker-secrets/production.env \
             -f 17-docker-production-platform/docker-compose.yml \
             pull product auth order notification
 
       - name: Deploy application
         run: |
           docker compose \
+            --env-file /home/asus/docker-projects/docker-secrets/production.env \
             -f 17-docker-production-platform/docker-compose.yml \
             up -d \
             product auth order notification nginx
@@ -56,6 +62,7 @@ jobs:
       - name: Verify deployment
         run: |
           docker compose \
+            --env-file /home/asus/docker-projects/docker-secrets/production.env \
             -f 17-docker-production-platform/docker-compose.yml \
             ps
 
