@@ -164,7 +164,7 @@ services:
 
 secrets:
   order_db_password:
-    file: ./secrets/order_db_password.txt
+    file: /home/asus/docker-projects/docker-secrets/order_db_password.txt
 
 networks:
   backend:
