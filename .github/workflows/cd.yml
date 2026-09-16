@@ -65,5 +65,4 @@ jobs:
 
       - name: Verify NGINX health
         run: |
-          docker exec nginx-gateway \
-            wget -qO- http://localhost/health
+          curl --fail http://localhost:8081/health
